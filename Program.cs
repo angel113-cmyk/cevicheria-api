@@ -5,13 +5,25 @@ using Cevicheria.Api.Data;
 using Cevicheria.Api.Models;
 using Cevicheria.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Render expone el puerto en PORT y escucha detrás de un proxy TLS.
+var puerto = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(puerto)) builder.WebHost.UseUrls($"http://0.0.0.0:{puerto}");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opt.UseNpgsql(ResolverConexion(builder.Configuration)));
+
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownIPNetworks.Clear();
+    o.KnownProxies.Clear();
+});
 
 // --- JWT: la configuración se valida al arrancar; sin clave válida la app no inicia. ---
 builder.Services.AddOptions<JwtOptions>()
@@ -65,7 +77,10 @@ builder.Services.AddCors(o => o.AddPolicy("Mobile", p => p
 
 var app = builder.Build();
 
+await AplicarMigracionesAsync(app);
 await SembrarAdminAsync(app);
+
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -74,9 +89,9 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
-// Sin redirección HTTPS forzada en desarrollo: el emulador Android usa http://10.0.2.2:5134
-if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
+app.MapGet("/health", () => Results.Ok("ok")).ExcludeFromDescription();
 
+// El TLS lo termina el proxy de Render; no se fuerza redirección dentro del contenedor.
 app.UseCors("Mobile");
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -112,4 +127,31 @@ static async Task SembrarAdminAsync(WebApplication app)
     });
     await db.SaveChangesAsync();
     app.Logger.LogInformation("Usuario administrador '{Usuario}' creado.", nombre);
+}
+
+/// <summary>Usa DATABASE_URL (postgres://usuario:clave@host:puerto/bd, formato de Render) si existe; si no, DefaultConnection.</summary>
+static string? ResolverConexion(IConfiguration config)
+{
+    var url = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrWhiteSpace(url)) return config.GetConnectionString("DefaultConnection");
+
+    var uri = new Uri(url);
+    var credenciales = uri.UserInfo.Split(':', 2);
+    return new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = Uri.UnescapeDataString(credenciales[0]),
+        Password = credenciales.Length > 1 ? Uri.UnescapeDataString(credenciales[1]) : null,
+        SslMode = Npgsql.SslMode.Require
+    }.ConnectionString;
+}
+
+/// <summary>Aplica las migraciones pendientes al arrancar (el contenedor no tiene 'dotnet ef').</summary>
+static async Task AplicarMigracionesAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
 }

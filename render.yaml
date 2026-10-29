@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cevicheria-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # URL de Postgres externo (Neon/Supabase), se pide al crear el Blueprint
+      - key: Jwt__Key
+        generateValue: true
+      - key: Seed__AdminUser
+        value: admin
+      - key: Seed__AdminPassword
+        sync: false # se pide al crear el Blueprint
