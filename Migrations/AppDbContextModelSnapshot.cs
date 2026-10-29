@@ -167,6 +167,84 @@ namespace Cevicheria.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Cevicheria.Api.Models.Insumo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("Stock")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal>("StockMinimo")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("UltimaActualizacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Unidad")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
+                    b.ToTable("insumos", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_insumos_minimo", "\"StockMinimo\" >= 0");
+
+                            t.HasCheckConstraint("ck_insumos_stock", "\"Stock\" >= 0");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Nombre = "Pescado fresco",
+                            Stock = 20m,
+                            StockMinimo = 5m,
+                            UltimaActualizacion = new DateTime(2026, 10, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Unidad = "kg"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Nombre = "Limones",
+                            Stock = 15m,
+                            StockMinimo = 5m,
+                            UltimaActualizacion = new DateTime(2026, 10, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Unidad = "kg"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Nombre = "Mariscos",
+                            Stock = 10m,
+                            StockMinimo = 3m,
+                            UltimaActualizacion = new DateTime(2026, 10, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Unidad = "kg"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Nombre = "Cebolla",
+                            Stock = 12m,
+                            StockMinimo = 4m,
+                            UltimaActualizacion = new DateTime(2026, 10, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Unidad = "kg"
+                        });
+                });
+
             modelBuilder.Entity("Cevicheria.Api.Models.Mesa", b =>
                 {
                     b.Property<int>("Id")

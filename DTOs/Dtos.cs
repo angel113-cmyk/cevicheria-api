@@ -76,3 +76,23 @@ public record PedidoDto(
     string? NumeroOperacion,
     DateTime FechaCreacion,
     List<DetallePedidoDto> Detalles);
+
+public record CambiarDisponibilidadRequest(bool Disponible);
+
+public record InsumoDto(int Id, string Nombre, string Unidad, decimal Stock, decimal StockMinimo);
+
+public class CrearInsumoRequest
+{
+    [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 2)]
+    public string Nombre { get; set; } = string.Empty;
+    [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(20)]
+    public string Unidad { get; set; } = "kg";
+    [System.ComponentModel.DataAnnotations.Range(0, 100000)] public decimal Stock { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(0, 100000)] public decimal StockMinimo { get; set; }
+}
+
+/// <summary>Cantidad con signo: positiva suma (entrada), negativa descuenta (consumo).</summary>
+public class AjustarStockRequest
+{
+    [System.ComponentModel.DataAnnotations.Range(-100000, 100000)] public decimal Cantidad { get; set; }
+}

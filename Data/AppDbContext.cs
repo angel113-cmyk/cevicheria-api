@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Pago> Pagos => Set<Pago>();
     public DbSet<Caja> Cajas => Set<Caja>();
     public DbSet<MovimientoCaja> MovimientosCaja => Set<MovimientoCaja>();
+    public DbSet<Insumo> Insumos => Set<Insumo>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -125,6 +126,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Caja).WithMany(c => c.Movimientos).HasForeignKey(x => x.CajaId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        b.Entity<Insumo>(e =>
+        {
+            e.ToTable("insumos", t =>
+            {
+                t.HasCheckConstraint("ck_insumos_stock", "\"Stock\" >= 0");
+                t.HasCheckConstraint("ck_insumos_minimo", "\"StockMinimo\" >= 0");
+            });
+            e.Property(x => x.Nombre).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Unidad).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Stock).HasColumnType("numeric(10,2)");
+            e.Property(x => x.StockMinimo).HasColumnType("numeric(10,2)");
+            e.Property(x => x.UltimaActualizacion).HasColumnType("timestamp with time zone");
+            e.HasIndex(x => x.Nombre).IsUnique();
+        });
+
         b.Entity<DetallePedido>(e =>
         {
             e.ToTable("detalles_pedido", t => t.HasCheckConstraint("ck_detalles_cantidad", "\"Cantidad\" > 0"));
@@ -151,6 +167,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new Plato { Id = 2, CategoriaId = 2, Nombre = "Causa de Atún", Descripcion = "Causa limeña rellena de atún con palta y mayonesa", Precio = 22.00m, Disponible = true },
             new Plato { Id = 3, CategoriaId = 3, Nombre = "Chicharrón de Calamar", Descripcion = "Calamar crocante con salsa tártara y yucas fritas", Precio = 38.00m, Disponible = true },
             new Plato { Id = 4, CategoriaId = 4, Nombre = "Chicha Morada", Descripcion = "Jarra de chicha morada natural (1 litro)", Precio = 14.00m, Disponible = true });
+
+        var fecha = new DateTime(2026, 10, 29, 0, 0, 0, DateTimeKind.Utc);
+        b.Entity<Insumo>().HasData(
+            new Insumo { Id = 1, Nombre = "Pescado fresco", Unidad = "kg", Stock = 20, StockMinimo = 5, UltimaActualizacion = fecha },
+            new Insumo { Id = 2, Nombre = "Limones", Unidad = "kg", Stock = 15, StockMinimo = 5, UltimaActualizacion = fecha },
+            new Insumo { Id = 3, Nombre = "Mariscos", Unidad = "kg", Stock = 10, StockMinimo = 3, UltimaActualizacion = fecha },
+            new Insumo { Id = 4, Nombre = "Cebolla", Unidad = "kg", Stock = 12, StockMinimo = 4, UltimaActualizacion = fecha });
 
         b.Entity<Mesa>().HasData(
             Enumerable.Range(1, 10).Select(n => new Mesa { Id = n, NumeroMesa = n, Estado = EstadosMesa.Libre }));

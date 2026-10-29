@@ -167,3 +167,16 @@ public class DetallePedido
     public Pedido? Pedido { get; set; }
     public Plato? Plato { get; set; }
 }
+
+/// <summary>Insumo crítico de cocina (pescado, limones, etc.) con stock manual.</summary>
+public class Insumo
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    /// <summary>Unidad de medida: kg, unidad, litro...</summary>
+    public string Unidad { get; set; } = "kg";
+    public decimal Stock { get; set; }
+    /// <summary>Por debajo o igual a este valor el insumo se marca en rojo.</summary>
+    public decimal StockMinimo { get; set; }
+    public DateTime UltimaActualizacion { get; set; } = DateTime.UtcNow;
+}
