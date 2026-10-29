@@ -79,6 +79,24 @@ public record PedidoDto(
 
 public record CambiarDisponibilidadRequest(bool Disponible);
 
+public record CategoriaDto(int Id, string Nombre);
+
+public class CategoriaRequest
+{
+    [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 2)]
+    public string Nombre { get; set; } = string.Empty;
+}
+
+/// <summary>Datos editables de un plato. El precio es neto (sin IGV).</summary>
+public class PlatoRequest
+{
+    [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue)] public int CategoriaId { get; set; }
+    [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(150, MinimumLength = 2)]
+    public string Nombre { get; set; } = string.Empty;
+    [System.ComponentModel.DataAnnotations.StringLength(500)] public string? Descripcion { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(0, 10000)] public decimal Precio { get; set; }
+}
+
 public record InsumoDto(int Id, string Nombre, string Unidad, decimal Stock, decimal StockMinimo);
 
 public class CrearInsumoRequest
