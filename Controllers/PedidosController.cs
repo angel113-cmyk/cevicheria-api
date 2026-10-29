@@ -168,8 +168,13 @@ public partial class PedidosController(AppDbContext db) : ControllerBase
         else if (!OperacionRegex().IsMatch(operacion))
             return BadRequest("NumeroOperacion solo admite letras, números y guiones (máx. 30).");
 
+        // Todo cobro queda asociado a la caja abierta; sin caja abierta no se puede cobrar.
+        var caja = await db.Cajas.AsNoTracking().FirstOrDefaultAsync(c => c.Estado == EstadosCaja.Abierta, ct);
+        if (caja is null) return Conflict("Debe abrir la caja antes de cobrar.");
+
         pedido.Pago = new Pago
         {
+            CajaId = caja.Id,
             MetodoPago = req.MetodoPago,
             Monto = pedido.Total,
             MontoEntregado = entregado,

@@ -99,8 +99,60 @@ public class Pago
     /// <summary>Dígitos del voucher de Yape/Plin/Tarjeta.</summary>
     public string? NumeroOperacion { get; set; }
     public DateTime FechaPago { get; set; } = DateTime.UtcNow;
+    /// <summary>Caja (turno) abierta en la que se cobró. Nulo en cobros anteriores al módulo de caja.</summary>
+    public int? CajaId { get; set; }
 
     public Pedido? Pedido { get; set; }
+    public Caja? Caja { get; set; }
+}
+
+public static class EstadosCaja
+{
+    public const string Abierta = "Abierta";
+    public const string Cerrada = "Cerrada";
+}
+
+public static class TiposMovimiento
+{
+    public const string Ingreso = "Ingreso";
+    public const string Egreso = "Egreso";
+
+    public static readonly string[] Todos = [Ingreso, Egreso];
+}
+
+/// <summary>Turno de caja: apertura con sencillo inicial y cierre con conteo de efectivo.</summary>
+public class Caja
+{
+    public int Id { get; set; }
+    public int UsuarioId { get; set; }
+    public string NombreUsuario { get; set; } = string.Empty;
+    public string Estado { get; set; } = EstadosCaja.Abierta;
+    public DateTime FechaApertura { get; set; } = DateTime.UtcNow;
+    public decimal MontoInicial { get; set; }
+    public DateTime? FechaCierre { get; set; }
+    /// <summary>Efectivo contado físicamente al cerrar.</summary>
+    public decimal? MontoContado { get; set; }
+    /// <summary>Inicial + cobros en efectivo + ingresos - egresos, calculado al cerrar.</summary>
+    public decimal? MontoEsperado { get; set; }
+    /// <summary>Contado - Esperado (negativo = faltante).</summary>
+    public decimal? Diferencia { get; set; }
+    public string? Notas { get; set; }
+
+    public ICollection<MovimientoCaja> Movimientos { get; set; } = new List<MovimientoCaja>();
+    public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
+}
+
+/// <summary>Ingreso o egreso de efectivo ajeno a las ventas (ej. compra de hielo, retiro).</summary>
+public class MovimientoCaja
+{
+    public int Id { get; set; }
+    public int CajaId { get; set; }
+    public string Tipo { get; set; } = TiposMovimiento.Egreso;
+    public decimal Monto { get; set; }
+    public string Concepto { get; set; } = string.Empty;
+    public DateTime Fecha { get; set; } = DateTime.UtcNow;
+
+    public Caja? Caja { get; set; }
 }
 
 public class DetallePedido

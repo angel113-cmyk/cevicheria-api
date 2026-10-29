@@ -22,6 +22,65 @@ namespace Cevicheria.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Cevicheria.Api.Models.Caja", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Diferencia")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime>("FechaApertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FechaCierre")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("MontoContado")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal?>("MontoEsperado")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal>("MontoInicial")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("NombreUsuario")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Notas")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado")
+                        .IsUnique()
+                        .HasFilter("\"Estado\" = 'Abierta'");
+
+                    b.HasIndex("FechaApertura");
+
+                    b.ToTable("cajas", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_cajas_estado", "\"Estado\" IN ('Abierta','Cerrada')");
+
+                            t.HasCheckConstraint("ck_cajas_inicial", "\"MontoInicial\" >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Cevicheria.Api.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
@@ -197,6 +256,45 @@ namespace Cevicheria.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Cevicheria.Api.Models.MovimientoCaja", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CajaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Concepto")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CajaId");
+
+                    b.ToTable("movimientos_caja", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_movimientos_monto", "\"Monto\" > 0");
+
+                            t.HasCheckConstraint("ck_movimientos_tipo", "\"Tipo\" IN ('Ingreso','Egreso')");
+                        });
+                });
+
             modelBuilder.Entity("Cevicheria.Api.Models.Pago", b =>
                 {
                     b.Property<int>("Id")
@@ -204,6 +302,9 @@ namespace Cevicheria.Api.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CajaId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("FechaPago")
                         .HasColumnType("timestamp with time zone");
@@ -230,6 +331,8 @@ namespace Cevicheria.Api.Migrations
                         .HasColumnType("numeric(10,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CajaId");
 
                     b.HasIndex("FechaPago");
 
@@ -418,13 +521,31 @@ namespace Cevicheria.Api.Migrations
                     b.Navigation("Plato");
                 });
 
+            modelBuilder.Entity("Cevicheria.Api.Models.MovimientoCaja", b =>
+                {
+                    b.HasOne("Cevicheria.Api.Models.Caja", "Caja")
+                        .WithMany("Movimientos")
+                        .HasForeignKey("CajaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Caja");
+                });
+
             modelBuilder.Entity("Cevicheria.Api.Models.Pago", b =>
                 {
+                    b.HasOne("Cevicheria.Api.Models.Caja", "Caja")
+                        .WithMany("Pagos")
+                        .HasForeignKey("CajaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Cevicheria.Api.Models.Pedido", "Pedido")
                         .WithOne("Pago")
                         .HasForeignKey("Cevicheria.Api.Models.Pago", "PedidoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Caja");
 
                     b.Navigation("Pedido");
                 });
@@ -448,6 +569,13 @@ namespace Cevicheria.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("Cevicheria.Api.Models.Caja", b =>
+                {
+                    b.Navigation("Movimientos");
+
+                    b.Navigation("Pagos");
                 });
 
             modelBuilder.Entity("Cevicheria.Api.Models.Categoria", b =>

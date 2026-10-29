@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<DetallePedido> DetallesPedido => Set<DetallePedido>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<Caja> Cajas => Set<Caja>();
+    public DbSet<MovimientoCaja> MovimientosCaja => Set<MovimientoCaja>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -85,6 +87,42 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => x.PedidoId).IsUnique(); // un solo cobro por pedido
             e.HasIndex(x => x.FechaPago);
+            e.HasOne(x => x.Caja).WithMany(c => c.Pagos).HasForeignKey(x => x.CajaId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Caja>(e =>
+        {
+            e.ToTable("cajas", t =>
+            {
+                t.HasCheckConstraint("ck_cajas_estado", "\"Estado\" IN ('Abierta','Cerrada')");
+                t.HasCheckConstraint("ck_cajas_inicial", "\"MontoInicial\" >= 0");
+            });
+            e.Property(x => x.NombreUsuario).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Estado).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Notas).HasMaxLength(500);
+            e.Property(x => x.MontoInicial).HasColumnType("numeric(10,2)");
+            e.Property(x => x.MontoContado).HasColumnType("numeric(10,2)");
+            e.Property(x => x.MontoEsperado).HasColumnType("numeric(10,2)");
+            e.Property(x => x.Diferencia).HasColumnType("numeric(10,2)");
+            e.Property(x => x.FechaApertura).HasColumnType("timestamp with time zone");
+            e.Property(x => x.FechaCierre).HasColumnType("timestamp with time zone");
+            // Garantiza a nivel de BD que solo exista una caja abierta a la vez.
+            e.HasIndex(x => x.Estado).IsUnique().HasFilter("\"Estado\" = 'Abierta'");
+            e.HasIndex(x => x.FechaApertura);
+        });
+
+        b.Entity<MovimientoCaja>(e =>
+        {
+            e.ToTable("movimientos_caja", t =>
+            {
+                t.HasCheckConstraint("ck_movimientos_tipo", "\"Tipo\" IN ('Ingreso','Egreso')");
+                t.HasCheckConstraint("ck_movimientos_monto", "\"Monto\" > 0");
+            });
+            e.Property(x => x.Tipo).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Concepto).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Monto).HasColumnType("numeric(10,2)");
+            e.Property(x => x.Fecha).HasColumnType("timestamp with time zone");
+            e.HasOne(x => x.Caja).WithMany(c => c.Movimientos).HasForeignKey(x => x.CajaId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<DetallePedido>(e =>

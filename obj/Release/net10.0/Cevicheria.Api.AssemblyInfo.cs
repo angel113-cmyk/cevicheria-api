@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Cevicheria.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+195e0bc30c2fc2922fc46eea0e171575d2175dbe")]
 [assembly: System.Reflection.AssemblyProductAttribute("Cevicheria.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Cevicheria.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

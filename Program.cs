@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Cevicheria.Api.Auth;
 using Cevicheria.Api.Data;
 using Cevicheria.Api.Models;
+using Cevicheria.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,6 +21,8 @@ builder.Services.AddOptions<JwtOptions>()
 var jwt = builder.Configuration.GetSection(JwtOptions.Section).Get<JwtOptions>() ?? new JwtOptions();
 
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddScoped<ReporteService>();
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community; // gratis para negocios < USD 1M de ingresos
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
