@@ -50,13 +50,15 @@ public class ReporteService(AppDbContext db)
             .Select(p => new { p.FechaPago, p.MetodoPago, p.Monto, Tipo = p.Pedido!.TipoPedido })
             .ToListAsync(ct);
 
-        var top = await db.DetallesPedido.AsNoTracking()
+        // Se ordena sobre un tipo anónimo y el DTO se arma en memoria: EF no traduce el OrderBy sobre el record proyectado.
+        var topFilas = await db.DetallesPedido.AsNoTracking()
             .Where(d => d.Pedido!.Pago != null && d.Pedido.Pago.FechaPago >= inicio && d.Pedido.Pago.FechaPago < fin)
             .GroupBy(d => d.Plato!.Nombre)
-            .Select(g => new PlatoVendidoDto(g.Key, g.Sum(x => x.Cantidad), g.Sum(x => x.Subtotal)))
+            .Select(g => new { Plato = g.Key, Cantidad = g.Sum(x => x.Cantidad), Total = g.Sum(x => x.Subtotal) })
             .OrderByDescending(x => x.Cantidad).ThenBy(x => x.Plato)
             .Take(10)
             .ToListAsync(ct);
+        var top = topFilas.Select(x => new PlatoVendidoDto(x.Plato, x.Cantidad, x.Total)).ToList();
 
         var total = pagos.Sum(p => p.Monto);
         return new VentasReporteDto(
